@@ -205,17 +205,42 @@ m1tech-soc/
 
 ---
 
-## Axes d'amélioration
+## Axes d'amélioration et justifications
 
-- [ ] HTTPS avec Certbot sur Nginx (reverse proxy)
-- [ ] VPN WireGuard pour accès distant sécurisé
-- [ ] Authentification MFA (TOTP)
-- [ ] Wazuh Active Response (blocage automatique des IP)
-- [ ] Sauvegarde automatisée avec restic
-- [ ] Scans de vulnérabilités avec Trivy/OpenVAS
+1. HTTPS / Reverse Proxy avec Certbot
+
+Justification : Actuellement le site Nginx est accessible en HTTP non chiffré (avertissement "Non sécurisé" visible dans le navigateur). La mise en place de Certbot avec Let's Encrypt permettrait de chiffrer les communications entre les clients et le serveur, protégeant les credentials et les données en transit. C'est une priorité absolue avant toute ouverture du service vers l'extérieur.
+
+2. VPN WireGuard
+
+Justification : Les interfaces d'administration (Uptime Kuma :3001, Glances :61208, Wazuh :443) sont actuellement accessibles depuis n'importe quelle IP. WireGuard permettrait de restreindre l'accès à ces interfaces aux seuls administrateurs connectés via VPN, réduisant drastiquement la surface d'attaque. C'est d'autant plus important que M1Tech Solutions prévoit d'ouvrir une nouvelle agence nécessitant un accès distant sécurisé.
+
+3. Authentification Multi-Facteurs (MFA/TOTP)
+
+Justification : L'incident n°1 du contexte (tentative de brute-force SSH) démontre la nécessité d'une seconde couche d'authentification. Même avec Fail2Ban, un mot de passe compromis suffit pour accéder au système. Le MFA via TOTP (Google Authenticator, Authy) rendrait une compromission de mot de passe insuffisante pour accéder au système.
+
+4. Sauvegarde automatisée (restic/borgbackup)
+
+Justification : En cas d'attaque ransomware ou de défaillance matérielle, les données de MariaDB et les configurations Wazuh seraient perdues. Une sauvegarde automatisée quotidienne vers un stockage externe (S3, NFS) avec rétention de 30 jours permettrait un RPO < 24h et un RTO < 4h, conformément aux bonnes pratiques PRA.
+
+5. Wazuh Active Response
+
+Justification : Actuellement Wazuh détecte les attaques mais n'agit pas automatiquement. L'activation de l'Active Response permettrait de bloquer automatiquement les IP malveillantes après détection d'un brute-force (comme celui démontré en Partie 6), sans intervention humaine. Cela réduirait le MTTR (Mean Time To Respond) de plusieurs minutes à quelques secondes.
+
+6. Centralisation des journaux (ELK Stack)
+
+Justification : Wazuh centralise déjà les événements de sécurité, mais les logs applicatifs (Nginx, MariaDB) restent locaux sur chaque conteneur. L'intégration d'une stack ELK (Elasticsearch + Logstash + Kibana) permettrait de corréler les logs de tous les services dans une interface unique, facilitant les investigations comme celle décrite en Partie 7.
+
+7. Gestion des vulnérabilités (Trivy/OpenVAS)
+
+Justification : Les images Docker utilisées (nginx:alpine, mariadb:10.11) peuvent contenir des CVE non corrigées. Un scan hebdomadaire automatisé avec Trivy permettrait d'identifier et corriger les vulnérabilités avant qu'elles ne soient exploitées. C'est d'autant plus important que M1Tech Solutions héberge une base de données clients.
+
+8. PRA/PCA
+
+Justification : L'incident n°3 du contexte (serveur web indisponible plusieurs heures) démontre l'absence de plan de continuité. Un PRA documenté avec des procédures de restauration testées régulièrement garantirait la reprise des services critiques en moins de 4 heures, limitant l'impact business d'un incident majeur.
 
 ---
 
 ## Licence
 
-Projet réalisé dans le cadre du Hackathon M1 — Infrastructures Réseaux & Cybersécurité.
+Projet réalisé dans le cadre du Hackathon 
